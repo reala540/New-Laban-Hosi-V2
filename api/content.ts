@@ -13,7 +13,7 @@ async function handler(req: VercelRequest, res: VercelResponse) {
   const [bannerRows, offers, services, doctors, gallery] = await Promise.all([
     sql`select active, message, type from banner limit 1`,
     sql`select id, title, description, image_url as "imageUrl", active, created_at as "createdAt"
-        from offers order by sort_order asc, created_at asc`,
+        from offers where active = true order by sort_order asc, created_at asc`,
     sql`select id, name, description, icon
         from services order by sort_order asc, created_at asc`,
     sql`select id, name, specialty, bio, image_url as "imageUrl"
