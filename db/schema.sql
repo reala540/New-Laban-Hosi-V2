@@ -76,8 +76,8 @@ create table if not exists doctors (
 );
 
 -- ---------------------------------------------------------------------------
--- Gallery metadata (the actual files live in Vercel Blob; this table just
--- stores the URL Blob returned, plus a caption).
+-- Gallery metadata. blob_url points at /api/media?id=<uuid> for photos
+-- uploaded through the admin panel (the bytes live in the media table).
 -- ---------------------------------------------------------------------------
 create table if not exists gallery_items (
   id uuid primary key default gen_random_uuid(),
@@ -122,3 +122,47 @@ create index if not exists idx_offers_sort on offers (sort_order, created_at);
 create index if not exists idx_services_sort on services (sort_order, created_at);
 create index if not exists idx_doctors_sort on doctors (sort_order, created_at);
 create index if not exists idx_gallery_created_at on gallery_items (created_at desc);
+
+-- ---------------------------------------------------------------------------
+-- Media: images uploaded through the admin panel (gallery, doctors, offers).
+-- Bytes live in Postgres so the whole site runs on a single database.
+-- ---------------------------------------------------------------------------
+create table if not exists media (
+  id uuid primary key default gen_random_uuid(),
+  content_type text not null,
+  size_bytes integer not null,
+  data bytea not null,
+  created_at timestamptz not null default now()
+);
+
+-- ---------------------------------------------------------------------------
+-- Admin settings: key/value store (currently holds only the scrypt hash of
+-- the admin password).
+-- ---------------------------------------------------------------------------
+create table if not exists admin_settings (
+  key text primary key,
+  value text not null
+);
+
+-- ---------------------------------------------------------------------------
+-- Rate limiting buckets (login attempts, form submissions, uploads).
+-- ---------------------------------------------------------------------------
+create table if not exists rate_limits (
+  key text primary key,
+  count integer not null default 0,
+  window_start timestamptz not null default now()
+);
+
+-- ---------------------------------------------------------------------------
+-- Least-privilege role used by the deployed site (DATABASE_URL). It can read
+-- and write the tables it needs and nothing else; it cannot create/drop
+-- tables or read anything outside this set.
+-- ---------------------------------------------------------------------------
+-- create role laban_app login password '<strong-password>';
+-- grant connect on database neondb to laban_app;
+-- grant usage on schema public to laban_app;
+-- grant select on banner to laban_app;
+-- grant select, insert, update, delete on offers, services, doctors, gallery_items, media to laban_app;
+-- grant select, insert on appointments, contact_messages to laban_app;
+-- grant update (status) on appointments, contact_messages to laban_app;
+-- grant select, insert, update, delete on admin_settings, rate_limits to laban_app;
