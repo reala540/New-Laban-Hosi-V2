@@ -1,79 +1,58 @@
 # The Laban Hospital Website
 
-A React + TypeScript + Vite site for The Laban Hospital, deployed on Vercel.
-This is a **read-only public site**: there is no admin panel and no
-web-based way to edit content. Content updates now happen by editing the
-database directly or by rebuilding/redeploying the project.
+A React + TypeScript + Vite site for The Laban Hospital, deployed on Vercel,
+with a **secure, hidden admin panel** so the hospital owner can update the
+website without touching code.
 
 ## Architecture
 
-- **Neon (Postgres)** — stores structured content: banner, offers, services,
-  doctors, gallery captions/URLs, appointments, and contact messages. See
-  `db/schema.sql`.
-- **Vercel Functions** (`/api/*.ts`) — a small, public-only backend:
-  - `content.ts` — GET, aggregates banner + offers + services + doctors +
-    gallery into one response for the public site.
-  - `appointments.ts` — POST only, accepts new "Book Appointment" form
-    submissions.
-  - `messages.ts` — POST only, accepts new contact-form messages.
-- **Photo showcase** — the cinematic homepage photo slider (`PhotoShowcase.tsx`)
-  uses real, curated photos of the hospital and its community work, bundled
-  as static files under `public/gallery/`. These are **not** pulled from the
-  `gallery_items` database table, since there is no longer an admin write
-  path to populate it live — see "Content updates" below.
+- **Neon (Postgres)** — the only database. Stores all content (banner,
+  offers, services, doctors, gallery photos, appointments, contact messages)
+  plus uploaded image bytes (`media` table), the admin password hash and
+  rate-limit buckets. See `db/schema.sql`.
+- **Vercel Functions** (`/api/*.ts`) — the backend:
+  - Public: `content.ts` (GET site content), `appointments.ts` and
+    `messages.ts` (POST form submissions), `media.ts` (GET an uploaded image).
+  - Admin only (`/api/admin/*`): login/logout/session check plus full
+    create/edit/delete for banner, services, doctors, offers and gallery,
+    viewing and status updates for appointment requests and contact messages,
+    image upload, and password change. Every admin route verifies the session
+    cookie on the server before doing anything.
+- **Hidden admin panel** — lives at `/manage/<ADMIN_URL_KEY>` where
+  `ADMIN_URL_KEY` is a random string set as a Vercel environment variable.
+  No page on the public site links to it, `robots.txt` excludes `/manage`,
+  and any wrong `/manage/*` URL shows the same plain "page not found" as any
+  other unknown URL. Signing in requires the admin password (scrypt-hashed in
+  the database); the session is an HttpOnly, Secure, SameSite=Strict cookie
+  that expires after 8 hours.
 
-## What changed from the previous version
+## Security measures (summary)
 
-An earlier version of this site had a hidden admin panel at
-`/manage/<ADMIN_SECRET>` for editing content from a browser. That has been
-**fully removed**:
+- Secrets live only in server-side environment variables; none are in the
+  frontend bundle or the repo.
+- Every admin action is authenticated server-side; mutations additionally
+  require a custom header and a matching Origin (CSRF defence).
+- All input is validated on the server; all SQL is parameterized.
+- Login and public forms are rate limited (database-backed, per IP).
+- Uploads accept only real JPG/PNG/WebP images (checked by magic bytes),
+  max 2 MB; filenames and claimed types are ignored.
+- The site connects to the database as `laban_app`, a least-privilege role.
+- No user input is ever rendered as raw HTML (React escaping everywhere).
+- Error responses are generic; details are logged server-side only.
 
-- `src/admin/` (all editor components) — deleted
-- `api/banner.ts`, `services.ts`, `doctors.ts`, `offers.ts`, `gallery.ts`,
-  `upload.ts`, `health.ts` — deleted (these only existed to serve admin writes)
-- `server/auth.ts` and the `x-admin-key` header check — deleted
-- The `/manage/:secret` route in `main.tsx` — deleted
-- The `@vercel/blob` dependency — removed (no more uploads)
+## Setup
 
-The database tables themselves were **not** dropped — `appointments` and
-`contact_messages` still fill up from the public forms, and `services`,
-`doctors`, `offers`, and `gallery_items` still exist and are still read by
-`content.ts` if you want to populate them directly.
+See **SETUP-GUIDE.md** (delivered with the project) for the complete,
+beginner-friendly walkthrough: connecting Neon, setting the four environment
+variables in Vercel, signing in for the first time, and using the admin
+panel. The short version for developers:
 
-## Content updates (now that there's no admin panel)
-
-Since there's no web UI to add/edit services, doctors, offers, or gallery
-items anymore, updating them means either:
-
-1. **Editing the database directly** — open the Neon SQL Editor and run
-   `insert`/`update` statements against the relevant table (see
-   `db/schema.sql` for the exact columns). `content.ts` will pick up the
-   change on the next page load automatically — no redeploy needed.
-2. **Editing the code and redeploying** — e.g. to change the photos and
-   captions in the homepage showcase, edit the `PHOTOS` array at the top of
-   `src/components/PhotoShowcase.tsx` and push a new deploy.
-
-If you outgrow this (multiple staff needing to make frequent updates), a
-lightweight admin panel could be rebuilt later on the same database schema
-— the tables and public API are untouched.
-
-## One-time setup (you, the developer)
-
-1. **Push this project to GitHub** and import it into Vercel as normal.
-
-2. **Create a Neon database**: Vercel dashboard → your project → **Storage**
-   → **Create Database** → **Neon** (or **Postgres**). This automatically
-   adds a `DATABASE_URL` environment variable to your project.
-
-3. **Run the schema**: open the Neon database's **SQL Editor** and run
-   everything in `db/schema.sql`. This creates all the tables and seeds 8
-   default services so the site isn't empty on first load.
-
-4. **Redeploy** so the environment variables take effect.
-
-Note: **Vercel Blob is no longer required.** The old setup needed a Blob
-store for admin-uploaded photos/videos; since uploads were removed, you can
-skip that step entirely for a fresh deployment.
+1. Push to GitHub and import into Vercel.
+2. Create a Neon project and run `db/schema.sql` in its SQL Editor.
+3. Set `DATABASE_URL`, `SESSION_SECRET`, `ADMIN_URL_KEY` and
+   `ADMIN_INITIAL_PASSWORD` in the Vercel project's environment variables
+   (see `.env.example`).
+4. Redeploy, then visit `/manage/<ADMIN_URL_KEY>` to sign in.
 
 ## Local development
 
@@ -82,32 +61,45 @@ npm install
 npm run dev
 ```
 
-The `/api` routes only work when running through Vercel's own dev server
-(`vercel dev`), not plain `vite dev`, since they need a real Neon
-connection. For local testing, create a `.env` file pointing at your Neon
-database.
+The `/api` routes only work under `vercel dev` (they need a real Neon
+connection). Create a local `.env` with the same variables for that.
 
 ## Project structure
 
 ```
 db/
-  schema.sql        Run once against Neon - creates all tables + seed data
+  schema.sql        Creates all tables + seeds services (run once in Neon)
 
-server/             Shared backend helpers (NOT routes - just imported by api/*.ts)
+server/             Shared backend helpers (imported by api/*.ts)
   db.ts             Neon connection (the `sql` tagged-template function)
-  cors.ts           Shared CORS + no-cache headers
-  errorHandler.ts   Wraps every route so a bug returns JSON, not a crash
+  auth.ts           Session cookies, scrypt password hashing, requireAdmin()
+  rateLimit.ts      Database-backed fixed-window rate limiting
+  validate.ts       Server-side input validation helpers
+  cors.ts           CORS/cache headers (same-origin only, no wildcard)
+  errorHandler.ts   Wraps routes so bugs return generic JSON, never internals
 
 api/
-  content.ts        GET (public) - aggregates banner+offers+services+doctors+gallery in one call
-  appointments.ts   POST (public submit only)
-  messages.ts       POST (public submit only)
+  content.ts        GET (public) - banner+offers+services+doctors+gallery
+  appointments.ts   POST (public) - appointment form submissions
+  messages.ts       POST (public) - contact form submissions
+  media.ts          GET (public) - serves an uploaded image by id
+  admin/            All require a valid admin session
+    login.ts        POST - rate limited; sets the session cookie
+    logout.ts       POST - clears the session cookie
+    me.ts           GET  - "am I signed in?" check for the panel
+    banner.ts       GET/PUT the announcement banner
+    services.ts     GET/POST/PUT/DELETE services
+    doctors.ts      GET/POST/PUT/DELETE doctors
+    offers.ts       GET/POST/PUT/DELETE offers
+    gallery.ts      GET/POST/PUT/DELETE gallery photos
+    appointments.ts GET/PATCH appointment request statuses
+    messages.ts     GET/PATCH contact message statuses
+    upload.ts       POST - validates & stores an uploaded image
+    password.ts     POST - change the admin password
 
 src/
-  components/       Public site sections (Header, Hero, PhotoShowcase, Services, Offers, etc.)
-  lib/api.ts         Frontend helpers that call the /api routes above
-  lib/ContentContext.tsx   Loads public content once, shares it across components
-
-public/
-  gallery/          Real, curated photos used by the homepage photo showcase
+  components/       Public site sections (Header, Hero, PhotoShowcase, ...)
+  pages/            Privacy Policy, Terms of Service, 404
+  admin/            The admin panel (hidden route)
+  lib/              Public-site data fetching and helpers
 ```
