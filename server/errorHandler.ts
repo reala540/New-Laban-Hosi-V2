@@ -1,8 +1,12 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 
 /**
- * Wraps a handler so any thrown error becomes a proper JSON 500 response
+ * Wraps a handler so any thrown error becomes a generic JSON 500 response
  * instead of a raw function crash (FUNCTION_INVOCATION_FAILED).
+ *
+ * The real error is logged server-side only. The client always receives the
+ * same generic message so internals (SQL fragments, env names, file paths)
+ * never leak into responses.
  */
 export function withErrorHandling(
   routeName: string,
@@ -14,7 +18,7 @@ export function withErrorHandling(
     } catch (err) {
       console.error(`Unhandled error in ${routeName}:`, err)
       if (!res.headersSent) {
-        res.status(500).json({ error: (err as Error).message || 'Unknown server error' })
+        res.status(500).json({ error: 'Something went wrong. Please try again later.' })
       }
     }
   }
