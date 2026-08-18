@@ -23,7 +23,7 @@ export default function Footer() {
               P.O. BOX 22263-00400<br />
               Murang'a – Kaharati, Kenya
             </p>
-            {/* Placeholder social links - replace with the hospital's real profile URLs */}
+            {/* Social profile links - point these at the hospital's real pages once they exist */}
             <div className="footer-social">
               <a href="#" aria-label="Facebook"><Facebook size={16} /></a>
               <a href="#" aria-label="Instagram"><Instagram size={16} /></a>
@@ -76,10 +76,9 @@ export default function Footer() {
 
         <div className="footer-bottom">
           <p>&copy; {currentYear} The Laban Hospital. All rights reserved.</p>
-          {/* Placeholder legal pages - build these out if/when the hospital wants them */}
           <div className="footer-legal-links">
-            <a href="#">Privacy Policy</a>
-            <a href="#">Terms of Service</a>
+            <a href="/privacy-policy">Privacy Policy</a>
+            <a href="/terms-of-service">Terms of Service</a>
           </div>
         </div>
       </div>
