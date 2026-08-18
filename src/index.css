@@ -2320,3 +2320,111 @@ select:focus-visible {
     animation: none;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Legal pages (Privacy Policy / Terms of Service) + 404
+--------------------------------------------------------------------------- */
+.legal-page {
+  min-height: 100vh;
+  background: var(--surface-alt);
+  padding: 72px 0 96px;
+}
+
+.legal-page h1 {
+  font-family: 'Poppins', sans-serif;
+  color: var(--text-heading);
+  font-size: clamp(28px, 4vw, 40px);
+  margin-bottom: 8px;
+}
+
+.legal-page h2 {
+  font-family: 'Poppins', sans-serif;
+  color: var(--text-heading);
+  font-size: 20px;
+  margin: 32px 0 8px;
+}
+
+.legal-page p,
+.legal-page li {
+  color: var(--text-body);
+  max-width: 72ch;
+}
+
+.legal-page ul {
+  margin: 8px 0 16px 24px;
+}
+
+.legal-page a {
+  color: var(--medical-red);
+}
+
+.legal-updated {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.legal-back {
+  margin-top: 40px;
+  font-weight: 600;
+}
+
+/* ---------------------------------------------------------------------------
+   Polish pass: clearer focus states, smoother cards, friendlier buttons
+--------------------------------------------------------------------------- */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 3px solid rgba(200, 16, 46, 0.45);
+  outline-offset: 2px;
+}
+
+.service-card,
+.why-us-card,
+.doctor-card,
+.contact-card {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.service-card:hover,
+.why-us-card:hover,
+.doctor-card:hover,
+.contact-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.cta-button,
+.submit-btn,
+.nav-cta-btn {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.cta-button:hover,
+.submit-btn:hover,
+.nav-cta-btn:hover {
+  transform: translateY(-1px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .service-card,
+  .why-us-card,
+  .doctor-card,
+  .contact-card,
+  .cta-button,
+  .submit-btn,
+  .nav-cta-btn {
+    transition: none;
+  }
+
+  .service-card:hover,
+  .why-us-card:hover,
+  .doctor-card:hover,
+  .contact-card:hover,
+  .cta-button:hover,
+  .submit-btn:hover,
+  .nav-cta-btn:hover {
+    transform: none;
+  }
+}
