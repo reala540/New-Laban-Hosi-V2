@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
+import { useContent } from '../lib/ContentContext'
 
 // Real, curated photos of the hospital, its grounds, staff, and community
-// outreach work. These ship as static assets bundled with the site rather
-// than being pulled from the gallery_items table: the admin panel that used
-// to write to that table has been removed (see project handoff notes), so
-// there is no longer a live path for new photos to reach the database.
+// outreach work. These ship as static assets bundled with the site and act as
+// the default set. Once the hospital adds photos through the admin panel
+// (stored in the gallery_items table), those are shown instead.
 // Captions describe only what is actually visible in each photo.
 const PHOTOS = [
   {
@@ -32,16 +32,8 @@ const PHOTOS = [
     caption: 'A new mother carrying her baby through the hospital corridor'
   },
   {
-    src: '/gallery/corridor-child-health-day.jpg',
-    caption: 'Staff greeting mothers and children during a child health day'
-  },
-  {
     src: '/gallery/waiting-area-gathering.jpg',
     caption: 'Visitors gathered together in our bright reception area'
-  },
-  {
-    src: '/gallery/community-outreach-seating.jpg',
-    caption: 'A community outreach gathering held under the covered walkway'
   },
   {
     src: '/gallery/outreach-gift-bags.jpg',
@@ -62,9 +54,16 @@ const PHOTOS = [
 ]
 
 export default function PhotoShowcase() {
+  const { content } = useContent()
   const trackRef = useRef<HTMLDivElement>(null)
   const [paused, setPaused] = useState(false)
   const [reducedMotion, setReducedMotion] = useState(false)
+
+  // Admin-managed gallery photos take over the showcase once any exist.
+  const galleryPhotos = content.gallery
+    .filter((g) => g.type === 'image')
+    .map((g) => ({ src: g.url, caption: g.caption ?? '' }))
+  const photos = galleryPhotos.length > 0 ? galleryPhotos : PHOTOS
   const resumeTimer = useRef<number | null>(null)
   const dragState = useRef<{ down: boolean; startX: number; scrollLeft: number }>({
     down: false,
@@ -131,7 +130,7 @@ export default function PhotoShowcase() {
     resumeTimer.current = window.setTimeout(() => setPaused(false), 3000)
   }
 
-  if (PHOTOS.length === 0) return null
+  if (photos.length === 0) return null
 
   // Respect prefers-reduced-motion fully: show a static grid instead of an
   // auto-scrolling track, rather than just turning off the animation on
@@ -145,7 +144,7 @@ export default function PhotoShowcase() {
         </div>
         <div className="container">
           <div className="showcase-static-grid">
-            {PHOTOS.map((photo) => (
+            {photos.map((photo) => (
               <figure className="showcase-card showcase-card-static" key={photo.src}>
                 <img src={photo.src} alt={photo.caption} loading="lazy" />
                 <figcaption>{photo.caption}</figcaption>
@@ -158,7 +157,7 @@ export default function PhotoShowcase() {
   }
 
   // Duplicate the photo set once so the loop can wrap seamlessly.
-  const loopPhotos = [...PHOTOS, ...PHOTOS]
+  const loopPhotos = [...photos, ...photos]
 
   return (
     <section className="showcase" aria-label="Photo showcase">
