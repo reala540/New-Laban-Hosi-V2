@@ -181,7 +181,7 @@ export default function PhotoShowcase() {
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
         onPointerLeave={endDrag}
-        onPointerCancel={onPointerCancel}
+        onPointerCancel={endDrag}
       >
         {loopPhotos.map((photo, i) => (
           <figure className="showcase-card" key={`${photo.src}-${i}`}>
