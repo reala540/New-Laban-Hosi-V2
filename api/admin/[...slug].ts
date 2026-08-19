@@ -50,19 +50,15 @@ const routes: Record<
 }
 
 async function handler(req: VercelRequest, res: VercelResponse) {
-  // On Vercel's non-Next.js runtime, req.query is parsed from the URL query
-  // string only — route parameters like [...slug] are NOT injected into
-  // req.query. Parse the route segment from req.url instead.
-  const url = req.url || ''
-  const segments = url.replace(/^\/api\/admin\//, '').split('?')[0].split('/')
+  const slug = req.query.slug
 
   // Only single-segment routes exist (e.g. /api/admin/offers). The bare
   // /api/admin path and anything deeper are not valid endpoints.
-  if (segments.length !== 1 || !segments[0]) {
+  if (!Array.isArray(slug) || slug.length !== 1) {
     return res.status(404).json({ error: 'Not found' })
   }
 
-  const route = routes[segments[0]]
+  const route = routes[slug[0]]
   if (!route) {
     return res.status(404).json({ error: 'Not found' })
   }
