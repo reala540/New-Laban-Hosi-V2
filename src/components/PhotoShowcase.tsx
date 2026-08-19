@@ -32,12 +32,20 @@ const PHOTOS = [
     caption: 'A new mother carrying her baby through the hospital corridor'
   },
   {
+    src: '/gallery/corridor-child-health-day.jpg',
+    caption: 'Our team welcoming mothers and children in the corridor on a child health day'
+  },
+  {
     src: '/gallery/waiting-area-gathering.jpg',
     caption: 'Visitors gathered together in our bright reception area'
   },
   {
     src: '/gallery/outreach-gift-bags.jpg',
     caption: 'Community members leaving with supplies after an outreach event'
+  },
+  {
+    src: '/gallery/community-outreach-seating.jpg',
+    caption: 'Community members seated together outside the hospital during an outreach visit'
   },
   {
     src: '/gallery/elderly-community-day.jpg',
@@ -117,10 +125,9 @@ export default function PhotoShowcase() {
   }
 
   const onPointerMove = (e: React.PointerEvent) => {
-    const track = trackRef.current
-    if (!track || !dragState.current.down) return
+    if (!trackRef.current || !dragState.current.down) return
     const dx = e.clientX - dragState.current.startX
-    track.scrollLeft = dragState.current.scrollLeft - dx
+    trackRef.current.scrollLeft = dragState.current.scrollLeft - dx
   }
 
   const endDrag = () => {
@@ -174,7 +181,7 @@ export default function PhotoShowcase() {
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
         onPointerLeave={endDrag}
-        onPointerCancel={endDrag}
+        onPointerCancel={onPointerCancel}
       >
         {loopPhotos.map((photo, i) => (
           <figure className="showcase-card" key={`${photo.src}-${i}`}>
